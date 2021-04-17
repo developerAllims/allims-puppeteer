@@ -31,6 +31,7 @@ const makePdf = async (html = '', json = {}, sleep = 2000, base64 = false, pdfOp
     let file = null
     try {
         browser = await puppeteer.launch({
+            //executablePath: 'C:\\Program Files\\Google\\Chrome\\Application',
             defaultViewport: {
                 deviceScaleFactor: 1,
                 hasTouch: false,
@@ -110,7 +111,7 @@ app.post('/', async (req = {}, res) => {
     }
 })
 
-const PORT = 3000
+const PORT = 80
 app.listen(PORT, () => console.log(`App is running: http://localhost:${PORT}`))
 
 const html = `
