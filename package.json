@@ -1,0 +1,21 @@
+{
+  "name": "allims-puppeteer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": "index.js",
+  "repository": "https://github.com/developerAllims/allims-puppeteer.git",
+  "author": "ricardomiranda-allims <54359457+ricardomiranda-allims@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "build": "pkg . --out-path ./out"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "puppeteer": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
