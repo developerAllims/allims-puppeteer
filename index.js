@@ -63,7 +63,14 @@ const makePdf = async (html = '', json = {}, sleep = 2000, base64 = false, pdfOp
         if (!!base64) {
             file = file.toString('base64')
             file = {
-                body: file
+                headers: {
+                    "Content-type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Length": file.length,
+                },
+                statusCode: 200,
+                body: file,
+                logs
             }
         }
     } catch(error) {
