@@ -95,7 +95,7 @@ app.get('/', async (req, res) => {
     }
 })
 
-app.post('/', async (req = {}, res) => {
+app.put('/', async (req = {}, res) => {
     try {
         const { body: { filename, html, json, sleep, pdfOptions, base64 } } = req
         const pdf = await makePdf(html, json, sleep, base64, pdfOptions)
