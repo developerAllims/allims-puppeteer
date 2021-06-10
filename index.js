@@ -60,17 +60,10 @@ const makePdf = async (html = '', json = {}, sleep = 2000, base64 = false, pdfOp
         await page.setContent(newHtml)
         await page.waitForTimeout(sleep)
         file = await page.pdf(newPdfOptions)
-        if (base64) {
+        if (!!base64) {
             file = file.toString('base64')
             file = {
-                headers: {
-                    "Content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Length": file.length,
-                },
-                statusCode: 200,
-                body: file,
-                logs,
+                body: file
             }
         }
     } catch(error) {
@@ -101,9 +94,13 @@ app.put('/', async (req = {}, res) => {
         const pdf = await makePdf(html, json, sleep, base64, pdfOptions)
         if (!base64) {
             res.setHeader('Content-Type', 'application/pdf')
-            res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
             res.setHeader('Access-Control-Allow-Origin', '*')
-            res.setHeader('Content-Length', pdf.length)
+            if (!!filename) {
+                res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+            }
+        } else {
+            res.setHeader('Content-Type', 'application/json')
+            res.setHeader('Access-Control-Allow-Origin', '*')
         }
         res.status(200).send(pdf)
     } catch(error) {
