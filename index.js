@@ -5,115 +5,201 @@ app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ limit: '50mb', extended: true }))
 
 const defaultPdfOptions = {
-    format: 'A4',
-    landscape: false,
-    height: '297mm',
-    width: '210mm',
-    margin: {
-        bottom: '0mm',
-        left: '0mm',
-        right: '0mm',
-        top: '0mm'
-    },
-    path: '',
-    printBackground: false,
-    scale: 1,
+  format: 'A4',
+  landscape: false,
+  height: '297mm',
+  width: '210mm',
+  margin: {
+    bottom: '0mm',
+    left: '0mm',
+    right: '0mm',
+    top: '0mm'
+  },
+  path: '',
+  printBackground: false,
+  scale: 1
 }
 
 const puppeteer = require('puppeteer')
 
-const makePdf = async (html = '', json = {}, sleep = 2000, base64 = false, pdfOptions) => {
-    let newPdfOptions = pdfOptions || defaultPdfOptions
-    let newHtml = html
-    let newJson = json
-    let browser = null
-    let logs = []
-    let file = null
-    try {
-        browser = await puppeteer.launch({
-            //executablePath: 'C:\\Program Files\\Google\\Chrome\\Application',
-            defaultViewport: {
-                deviceScaleFactor: 1,
-                hasTouch: false,
-                height: 1080,
-                isLandscape: true,
-                isMobile: false,
-                width: 1920,
-            },
-            headless: true,
-            ignoreHTTPSErrors: true,
-        })
-        const page = await browser.newPage()
-        page.on("console", (msg) => {
-            const newMsg = msg.text()
-            const parseBlock = newMsg.indexOf('parser-blocking')
+const makePdf = async (
+  html = '',
+  json = {},
+  sleep = 2000,
+  base64 = false,
+  pdfOptions
+) => {
+  const t0 = new Date()
+  let newPdfOptions = pdfOptions || defaultPdfOptions
+  let newHtml = html
+  let newJson = json
+  let browser = null
+  let logs = []
+  let file = null
+  try {
+    browser = await puppeteer.launch({
+      //executablePath: 'C:\\Program Files\\Google\\Chrome\\Application',
+      defaultViewport: {
+        deviceScaleFactor: 1,
+        hasTouch: false,
+        height: 1080,
+        isLandscape: true,
+        isMobile: false,
+        width: 1920
+      },
+      headless: true,
+      ignoreHTTPSErrors: true
+    })
+    const t1 = new Date()
+    console.log('makePdf.launch():', await getElapsedTime(t0, t1))
 
-            if (parseBlock < 0) {
-                const JSHandle = newMsg.indexOf('JSHandle@')
-                if (JSHandle < 0) {
-                    logs.push(msg.text())
-                }
-            }
-        })
-        if (typeof newJson === 'string') newJson = JSON.parse(newJson)
-        if (newJson) newHtml = `<script> var allims = ${JSON.stringify(newJson)} </script> ${newHtml}`
-        await page.setContent(newHtml)
-        await page.waitForTimeout(sleep)
-        file = await page.pdf(newPdfOptions)
-        if (!!base64) {
-            file = file.toString('base64')
-            file = {
-                headers: {
-                    "Content-type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Length": file.length,
-                },
-                statusCode: 200,
-                body: file,
-                logs
-            }
+    const page = await browser.newPage()
+    const t2 = new Date()
+    console.log('makePdf.newPage():', await getElapsedTime(t1, t2))
+
+    page.on('console', async msg => {
+      const newMsg = msg.text()
+      const parseBlock = newMsg.indexOf('parser-blocking')
+
+      if (parseBlock < 0) {
+        const JSHandle = newMsg.indexOf('JSHandle@')
+        if (JSHandle < 0) {
+          logs.push(msg.text())
         }
-    } catch(error) {
-        throw error
-    } finally {
-        if (browser) await browser.close()
+      }
+
+      const t3 = new Date()
+      console.log('makePdf.on():', await getElapsedTime(t2, t3))
+    })
+
+    const t3 = new Date()
+    if (typeof newJson === 'string') newJson = JSON.parse(newJson)
+    if (newJson)
+      newHtml = `<script> var allims = ${JSON.stringify(
+        newJson
+      )} </script> ${newHtml}`
+    const t4 = new Date()
+    console.log('makePdf.parse():', await getElapsedTime(t3, t4))
+
+    await page.setContent(newHtml)
+    const t5 = new Date()
+    console.log('makePdf.setContent():', await getElapsedTime(t4, t5))
+
+    await page.waitForTimeout(2000 || sleep)
+    const t6 = new Date()
+    console.log('makePdf.waitForTimeout():', await getElapsedTime(t5, t6))
+
+    file = await page.pdf(newPdfOptions)
+    const t7 = new Date()
+    console.log('makePdf.waitForTimeout():', await getElapsedTime(t6, t7))
+
+    if (!!base64) {
+      file = file.toString('base64')
+      file = {
+        headers: {
+          'Content-type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Content-Length': file.length
+        },
+        statusCode: 200,
+        body: file,
+        logs
+      }
+      const t8 = new Date()
+      console.log('makePdf.base64():', await getElapsedTime(t7, t8))
     }
-    return file
+  } catch (error) {
+    throw error
+  } finally {
+    const t8 = new Date()
+    if (browser) await browser.close()
+    const t9 = new Date()
+    console.log('makePdf.close():', await getElapsedTime(t8, t9))
+  }
+  return file
 }
 
 app.get('/', async (req, res) => {
-    try {
-        const pdf = await makePdf(html)
-        const filename = 'allims.pdf'
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Content-Length', pdf.length)
-        res.status(200).send(pdf)
-    } catch(error) {
-        res.send({ success: false, message: error.message })
-    }
+  try {
+    const pdf = await makePdf(html)
+    const filename = 'allims.pdf'
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Content-Length', pdf.length)
+    res.status(200).send(pdf)
+  } catch (error) {
+    res.send({ success: false, message: error.message })
+  }
 })
 
 app.put('/', async (req = {}, res) => {
-    try {
-        const { body: { filename, html, json, sleep, pdfOptions, base64 } } = req
-        const pdf = await makePdf(html, json, sleep, base64, pdfOptions)
-        if (!base64) {
-            res.setHeader('Content-Type', 'application/pdf')
-            res.setHeader('Access-Control-Allow-Origin', '*')
-            if (!!filename) {
-                res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
-            }
-        } else {
-            res.setHeader('Content-Type', 'application/json')
-            res.setHeader('Access-Control-Allow-Origin', '*')
-        }
-        res.status(200).send(pdf)
-    } catch(error) {
-        res.send({ success: false, message: error.message })
+  try {
+    console.log('---------------')
+    const t0 = new Date()
+
+    const {
+      body: { filename, html, json, sleep, pdfOptions, base64 }
+    } = req
+    const t1 = new Date()
+    console.log('put.req:', await getElapsedTime(t0, t1))
+
+    const pdf = await makePdf(html, json, sleep, base64, pdfOptions)
+    const t2 = new Date()
+    console.log('put.makePdf():', await getElapsedTime(t1, t2))
+
+    if (!base64) {
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      if (!!filename) {
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`)
+      }
+    } else {
+      res.setHeader('Content-Type', 'application/json')
+      res.setHeader('Access-Control-Allow-Origin', '*')
     }
+
+    const t3 = new Date()
+    console.log('put.final:', await getElapsedTime(t2, t3))
+    res.status(200).send(pdf)
+  } catch (error) {
+    res.send({ success: false, message: error.message })
+  }
 })
+
+const addElapsedTimePart = (str = '', part = 0, unit) => {
+  if (!part > 0) return ''
+  let out = str
+  if (out !== '') out += ' '
+  out += part + unit
+  return out
+}
+const getElapsedTime = async (ini, end) => {
+  const ms1 = ini.getTime()
+  const ms2 = end.getTime()
+
+  if (ms1 === ms2) return '0s'
+
+  let diff = ms2 - ms1
+  const ms = diff % 1000
+
+  diff = Math.trunc((diff - ms) / 1000)
+  const s = diff % 60
+
+  diff = Math.trunc((diff - s) / 60)
+  const min = diff % 60
+
+  diff = Math.trunc((diff - min) / 60)
+  const h = diff % 24
+
+  let out = ''
+  out = addElapsedTimePart(out, h, 'h')
+  out = addElapsedTimePart(out, min, 'min')
+  out = addElapsedTimePart(out, s, 's')
+  out = addElapsedTimePart(out, ms, 'ms')
+
+  return out
+}
 
 const PORT = 80
 app.listen(PORT, () => console.log(`App is running: http://localhost:${PORT}`))
